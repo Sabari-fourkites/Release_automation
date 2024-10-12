@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GitHub Commits Viewer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Helvetica Neue', sans-serif;
+            background-color: #f5f5f5;
+            color: #333;
+            display: flex;
+        }
+
+        /* Left-Side Navigation with Light Blue */
+        .nav {
+            width: 220px;
+            background-color: #069bff;
+            padding: 20px;
+            position: fixed;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            overflow-y: auto;
+            box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .nav h2 {
+            color: #000;
+            margin-bottom: 20px;
+            font-size: 22px;
+            text-transform: uppercase;
+            font-weight: bold;
+            letter-spacing: 1px;
+        }
+
+        .nav a {
+            color: #484848;
+            text-decoration: none;
+            display: block;
+            padding: 12px;
+            margin-bottom: 10px;
+            background-color: #fdfdfd;
+            border-radius: 6px;
+            font-weight: bold;
+            text-align: center;
+            transition: background-color 0.3s ease;
+        }
+
+        .nav a:hover {
+            background-color: #dadada;
+        }
+        .nav .logo {
+            margin-top: auto; /* Pushes the logo to the bottom */
+            padding-bottom: 20px; /* Space above the logo */
+            text-align: center;
+            bottom: 0;
+            position: absolute;
+        }
+
+        .nav .logo img {
+            width: 80%; /* Adjust the size of the logo */
+            max-width: 150px; /* Set a maximum width */
+        }
+
+        /* Main content */
+        .container {
+            margin-left: 250px;
+            padding: 40px;
+            width: calc(100% - 250px);
+        }
+        .header-pr-div{
+            width: 100%;
+            align-items: center;
+            display: flex;
+            justify-content: space-around;
+        }
+
+        h1 {
+            font-size: 26px;
+            color: #333;
+            margin-bottom: 10px;
+            text-align: center;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+        }
+        h3 {
+            font-size: 20px;
+            background-color: #07cc00;
+            color: #fff;
+            width: 600px;
+            border-radius: 10px;
+            /* align-items: center; */
+            padding: 15px;
+            margin-bottom: 20px;
+            margin-top: 10px;
+
+            text-align: center;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+        }
+
+        /* Centering the commit cards */
+        #commits-container {
+            margin-top: 30px;
+        }
+
+        /* Commit Card Styling */
+        .commit {
+            background-color: #fff;
+            padding: 20px;
+            width: 100%;
+            margin-bottom: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            position: relative;
+            transition: transform 0.3s, background-color 0.3s, box-shadow 0.3s;
+        }
+
+        .commit:hover {
+            background-color: #f3f3f3;
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .commit-header {
+            font-size: 20px;
+            font-weight: bold;
+            color: #333;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .commit-author {
+            font-size: 16px;
+            color: #666;
+            margin-bottom: 5px;
+            margin-top: 5px;
+        }
+
+        .commit-sha {
+            font-size: 12px;
+            color: #0095ff;
+            margin-top: 10px;
+            display: block;
+        }
+        .commit-warn {
+            font-size: 12px;
+            color: #fa1919;
+            margin-top: 10px;
+            display: block;
+            font-weight: bold;
+        }
+        .commit-green {
+            font-size: 12px;
+            color: #18e33a;
+            margin-top: 10px;
+            display: block;
+            font-weight: bold;
+        }
+
+        .commit-date {
+            font-size: 12px;
+            color: #999;
+            position: absolute;
+            bottom: 10px;
+            right: 20px;
+        }
+
+        .commit-message {
+            margin-top: 10px;
+            font-size: 16px;
+            color: #555;
+            display: none; /* Initially hidden, shows on click */
+        }
+
+        .commit a {
+            display: inline-block;
+            margin-top: 10px;
+            /* color: #007BFF; */
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        .view_ticket{
+            padding: 7px;
+            background-color: #00bae9;
+            border-radius: 5px;
+            color: white;
+        }
+        .view_ticket_warn{
+            padding: 7px;
+            background-color: #f00;
+            border-radius: 5px;
+            color: white;
+        }
+        .view_ticket:hover{
+            background-color: #00a1d1;
+        }
+
+        /* Responsive layout */
+        @media (max-width: 768px) {
+            .container {
+                margin-left: 0;
+                padding: 20px;
+            }
+
+            .nav {
+                width: 100%;
+                position: relative;
+                height: auto;
+                margin-bottom: 20px;
+                box-shadow: none;
+            }
+        }
+        .redis-clear{
+            padding: 10px;
+            background-color: #f00;
+            border-radius: 5px;
+            color: white;
+            margin-bottom: 10px;
+            margin-top: 30px;
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+    <div class="nav">
+        <h2>Repositories</h2>
+        <a href="#" onclick="loadCommits('tracking-service')">Tracking Service</a>
+        <a href="#" onclick="loadCommits('global_worker')">Global Worker</a>
+        <a href="#" onclick="loadCommits('location_service')">Location Service</a>
+        <a href="#" onclick="loadCommits('location-worker')">Location Worker</a>
+        <a href="#" onclick="loadCommits('eta-configuration-service')">ETA Config Service</a>
+        <button class="redis-clear" onclick=clearRedisCache()>Clear Redis Cache</button>
+
+        <div class="logo">
+            <img src="../static/FOURKITES_LOGO_DARK.webp" alt="Logo">
+        </div>
+
+    </div>
+
+    <div class="container">
+        <div id="commits-container"></div>
+    </div>
+
+    <script>
+        function loadCommits(repoName) {
+            const url = `http://127.0.0.1:5000/commits?repo_name=${repoName}`;
+
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    if (data && data.repo_name) {
+                        // Update the header with the correct repository name
+                        const header = document.querySelector("#header");
+                        header.innerHTML = `Commits for Repository: <span class="repo-name">${data.repo_name}</span>`;
+                    }
+
+                    // Check if data has commits, if so, display them
+
+                    const container = document.getElementById("commits-container");
+                    if (data && data.commits) {
+                        displayCommits(data.commits, repoName);
+                    }
+                    else{
+                        container.innerHTML = `<h1 id="header">Commits for Repository: <span class="repo-name">${repoName}</span></h1>`;
+                        container.innerHTML += `<div class="header-pr-div"><h3 id="header">No commits found for this repository.</h3></div>`;
+                        return;
+                    }
+                })
+                .catch(error => console.error('Error loading commits:', error));
+        }
+
+        function displayCommits(commits, repoName) {
+
+            const container = document.getElementById("commits-container");
+            container.innerHTML = `<h1 id="header">Commits for Repository: <span class="repo-name">${repoName}</span></h1>`;
+            console.log(commits);
+            let count = 0;
+            commits.forEach(commit => {
+                if(commit.state[0] && commit.state[1]){
+                    count++;
+                }
+            });
+            container.innerHTML += `<div class="header-pr-div"> <h3 id="header-pr">Total PR's Ready for release: ${count}</h3></div>`;
+            commits.forEach(commit => {
+                const fullMessage = commit.message;
+                const shortenedMessage = fullMessage.split('\n')[0]; // Limit title to the first line or until a quotation mark
+
+                const commitDiv = document.createElement("div");
+                // commitDiv.className = "commit";
+                commitDiv.innerHTML = `
+                    <div class="commit" style="background-color: ${commit.state[0] ? (commit.state[1]? 'rgba(0, 255, 0, 0.1)' :'transparent') : 'rgba(255, 0, 0, 0.1)'};">
+                    <a href="${commit.url}" target="_blank" >
+                    <div class="commit-header">
+                        ${shortenedMessage}
+                    </div>
+                    <div class="commit-author">by ${commit.author}</div>
+                    <div class="commit-sha">SHA: ${commit.sha}</div>
+                    </a>
+                    ${!commit.state[1] ? '<div class="commit-warn" >Automation Not Done</div>' : ''}
+                    ${commit.state[1] ? '<div class="commit-green" >Automation Done</div>' : ''}
+                   ${commit.state[0] ? (commit.state[1]? '<div class="commit-green" >Ready For release</div>' : '') : ''}
+
+                    <div class="commit-date" >${commit.date}</div>
+                    ${commit.jira_ticket!=null ?  `<a class="view_ticket" href="https://fourkites.atlassian.net/browse/${commit.jira_ticket}" class="button">View Ticket</a>` : ''}
+                    ${commit.jira_ticket==null ?  `<a class="view_ticket_warn" class="button">No Ticket ID</a>` : ''}
+
+                    </div>
+                    `;
+                container.appendChild(commitDiv);
+            });
+        }
+
+        function clearRedisCache() {
+            console.log('Clearing Redis Cache...');
+            fetch('/clear-cache', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                alert(data.message || data.error);  // Show a message after clearing
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+        }
+
+        // Load commits for the default repository on page load
+        window.onload = () => loadCommits('tracking-service');
+    </script>
+</body>
+</html>
