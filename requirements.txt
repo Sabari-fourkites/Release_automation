@@ -1,0 +1,5 @@
+Flask==2.2.5           # Flask for creating web applications
+requests==2.31.0       # For making HTTP requests
+Flask-Cors==5.0.0      # To enable Cross-Origin Resource Sharing (CORS)
+python-dotenv==0.21.1  # For loading environment variables from a .env file
+redis==5.0.8           # Redis client for Python
