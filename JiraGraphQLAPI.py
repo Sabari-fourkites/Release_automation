@@ -30,6 +30,7 @@ class JiraGraphQLAPI:
             issue_id = issue_data.get('id', 'ID not found')
             return issue_id
         else:
+            ## ALWAYS ADD STACK TRACE HERE FOR ANY APPLICATIONS. ALWAYS BETTER TO HAVE COPLETE LOGS.
             return f"Failed to fetch ticket ID. Status code: {response.status_code}"
 
     def get_dev_details(self, jira_ticket):
@@ -89,11 +90,16 @@ class JiraGraphQLAPI:
 
         # Send the request to the Jira GraphQL endpoint
         graphql_url = f"{self.jira_url}/jsw2/graphql?operation=DevDetailsDialog"
+
+        ## HANDLE ERRORS FOR THIS POST REQUEST.
+        
         response = requests.post(graphql_url, data=graphql_query_json, headers=headers)
 
         if response.status_code == 200:
             return response.json()
         else:
+
+            ## RAISE EXCEPTIONS FOR ERRORS AND RAISE EXCEPTION HERE.
             return {"error": f"Failed to fetch development details for {ticket_id}. Status code: {response.status_code}"}
         
     def check_jira_ticket(self, jira_ticket,array):
