@@ -1,4 +1,5 @@
 from flask import Flask, jsonify, request,render_template
+from config import REDIS_CONFIG
 import requests
 from flask_cors import CORS
 from JiraGraphQLAPI import JiraGraphQLAPI
@@ -11,15 +12,18 @@ load_dotenv()
 
 
 
-r = redis.Redis(host='localhost', port=6379, db=0)
-
+r = redis.Redis(
+    host=REDIS_CONFIG['host'],
+    port=REDIS_CONFIG['port'],
+    db=REDIS_CONFIG['db']
+)
 # Initialize Flask application
 app = Flask(__name__)
 CORS(app)  # Enable CORS for all routes
 
 github_token = os.getenv('GITHUB_TOKEN')
 # GitHub API base URL
-GITHUB_API_URL = "https://api.github.com"
+GITHUB_API_URL = os.getenv('GITHUB_API_URL')
 
 def get_diff_commits(repo_owner, repo_name, branch_a, branch_b, token):
     """
