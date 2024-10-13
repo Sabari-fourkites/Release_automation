@@ -10,7 +10,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 
-
+# CREATE CONFIG FILE AND ADD THE HOST AND PORTT THERE.
 r = redis.Redis(host='localhost', port=6379, db=0)
 
 # Initialize Flask application
@@ -19,6 +19,8 @@ CORS(app)  # Enable CORS for all routes
 
 github_token = os.getenv('GITHUB_TOKEN')
 # GitHub API base URL
+
+#MOVE THIS TO CONFIG
 GITHUB_API_URL = "https://api.github.com"
 
 def get_diff_commits(repo_owner, repo_name, branch_a, branch_b, token):
@@ -31,6 +33,8 @@ def get_diff_commits(repo_owner, repo_name, branch_a, branch_b, token):
         "Authorization": f"token {token}",
         "Accept": "application/vnd.github.v3+json"
     }
+
+    ## MAKE SURE THATY OU ARE ERROR HANDLED.
     
     response = requests.get(url, headers=headers)
     
