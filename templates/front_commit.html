@@ -228,23 +228,57 @@
             margin-top: 30px;
             width: 100%;
         }
+        /* Styling the label */
+
+        /* Styling the select dropdown */
+        .nav select {
+            width: 100%;                /* Full width of the container */
+            padding: 10px;              /* Padding inside the select */
+            margin: 10px 0;             /* Margin to add space between elements */
+            font-size: 16px;            /* Adjust font size */
+            border: 1px solid #ccc;     /* Light gray border */
+            border-radius: 5px;         /* Rounded corners */
+            background-color: #f0ff25;     /* White background */
+            color: #333;                /* Text color */
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);  /* Small shadow for depth */
+            cursor: pointer;            /* Pointer cursor when hovering */
+            margin-bottom: 30px;
+        }
+
+        /* Change color when hovering over the dropdown */
+        .nav select:hover {
+            border-color: #007BFF;      /* Change border color on hover */
+        }
+
+        /* Styling when the select dropdown is focused (clicked) */
+        .nav select:focus {
+            outline: none;              /* Remove default outline */
+            border-color: #007BFF;      /* Border color on focus */
+            box-shadow: 0 0 5px rgba(0, 123, 255, 0.5); /* Add glow effect */
+        }
+
     </style>
 </head>
 <body>
     <div class="nav">
         <h2>Repositories</h2>
-        <a href="#" onclick="loadCommits('tracking-service')">Tracking Service</a>
-        <a href="#" onclick="loadCommits('global_worker')">Global Worker</a>
-        <a href="#" onclick="loadCommits('location_service')">Location Service</a>
-        <a href="#" onclick="loadCommits('location-worker')">Location Worker</a>
-        <a href="#" onclick="loadCommits('eta-configuration-service')">ETA Config Service</a>
-        <button class="redis-clear" onclick=clearRedisCache()>Clear Redis Cache</button>
-
+        
+        <select id="category" onchange="loadRepos(this.value)">
+            <!-- Options will be dynamically populated -->
+        </select>
+        
+        <!-- Dynamic Repository Links -->
+        <div id="repoList"></div>
+        
+        <!-- Button to Clear Redis Cache -->
+        <button class="redis-clear" onclick="clearRedisCache()">Clear Redis Cache</button>
+        
+        <!-- Logo Image -->
         <div class="logo">
             <img src="../static/FOURKITES_LOGO_DARK.webp" alt="Logo">
         </div>
-
     </div>
+    
 
     <div class="container">
         <div id="commits-container"></div>
@@ -336,8 +370,59 @@
             });
         }
 
+        function loadJSONData() {
+            fetch('/static/repos.json')
+                .then(response => response.json())
+                .then(data => {
+                    populateDropdown(data);
+                })
+                .catch(error => console.error('Error loading JSON:', error));
+        }
+
+        // Populate the dropdown with categories from the JSON
+        function populateDropdown(data) {
+            const categorySelect = document.getElementById('category');
+            categorySelect.innerHTML = '<option value="">Select Team</option>';  // Reset options
+
+            Object.keys(data).forEach(category => {
+                const option = document.createElement('option');
+                option.value = category;
+                option.textContent = category;
+                categorySelect.appendChild(option);
+            });
+
+            // Store data globally for later use
+            window.reposData = data;
+        }
+
+        // Function to load repositories based on selected category
+        function loadRepos(category) {
+            const repoList = document.getElementById('repoList');
+            repoList.innerHTML = ''; // Clear existing links
+
+            if (window.reposData && window.reposData[category]) {
+                window.reposData[category].forEach(repo => {
+                    // Create an anchor element for each repo
+                    const a = document.createElement('a');
+                    a.textContent = repo.display_name;
+                    a.onclick = () => loadCommits(repo.repository);
+                    
+                    // Add class for consistent styling
+                    a.classList.add('repo-link');
+                    
+                    // Append the anchor to the repoList div
+                    repoList.appendChild(a);
+                    // repoList.appendChild(document.createElement('br')); // Add line break
+                });
+            }
+        }
+
         // Load commits for the default repository on page load
-        window.onload = () => loadCommits('tracking-service');
+        window.onload = function() {
+            loadCommits('tracking-service');  // Run the first function
+            loadJSONData();                   // Run the second function
+        };
+
     </script>
 </body>
 </html>

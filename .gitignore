@@ -1,0 +1,7 @@
+# Environment Variables
+.env
+
+.DS_Store
+# Python Bytecode
+__pycache__/
+*.py[cod]
