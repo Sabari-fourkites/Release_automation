@@ -285,8 +285,8 @@
     </div>
 
     <script>
-        function loadCommits(repoName) {
-            const url = `http://127.0.0.1:5000/commits?repo_name=${repoName}`;
+        function loadCommits(team,repoName) {
+            const url = `http://127.0.0.1:5000/commits?team=${team}&repo_name=${repoName}`;
 
             fetch(url)
                 .then(response => response.json())
@@ -414,7 +414,7 @@
                     // Create an anchor element for each repo
                     const a = document.createElement('a');
                     a.textContent = repo.display_name;
-                    a.onclick = () => loadCommits(repo.repository);  // Hook to load commits
+                    a.onclick = () => loadCommits(team,repo.repository);  // Hook to load commits
                     
                     // Add class for consistent styling
                     a.classList.add('repo-link');

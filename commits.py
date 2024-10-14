@@ -21,9 +21,24 @@ r = redis.Redis(
 app = Flask(__name__)
 CORS(app)  # Enable CORS for all routes
 
+# Load the repos.json globally at the start of the app
+with open('static/repos.json') as f:
+    repos_data = json.load(f)
+
+
 github_token = os.getenv('GITHUB_TOKEN')
 # GitHub API base URL
 GITHUB_API_URL = os.getenv('GITHUB_API_URL')
+
+def get_repo_object(team, repo_name):
+    """
+    Helper function to get the repo object based on the team and repo name.
+    """
+    if team in repos_data['teams']:
+        team_repos = repos_data['teams'][team]
+        if repo_name in team_repos:
+            return team_repos[repo_name]
+    return None
 
 def get_diff_commits(repo_owner, repo_name, branch_a, branch_b, token):
     """
@@ -121,6 +136,8 @@ def get_commits():
     """
     repo_owner = "cloudqwest"  # Replace with your GitHub username or organization
     repo_name = request.args.get('repo_name')
+    team = request.args.get('team')
+    repo_object = get_repo_object(team, repo_name)
     branch_a = "develop"                # Replace with the source branch name
     branch_b = "staging"                # Replace with the target branch name
     token = github_token          # Replace with your GitHub personal access token
