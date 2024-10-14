@@ -40,14 +40,14 @@ def get_repo_object(team, repo_name):
             return team_repos[repo_name]
     return None
 
-def get_diff_commits(repo_owner, repo_name, branch_a, branch_b, token):
+def get_diff_commits(repo_owner, repo_name, branch_a, branch_b,repo_object):
     """
     Compare two branches and get the list of differing commits.
     """
     url = f"{GITHUB_API_URL}/repos/{repo_owner}/{repo_name}/compare/{branch_b}...{branch_a}"
     
     headers = {
-        "Authorization": f"token {token}",
+        "Authorization": f"token {github_token}",
         "Accept": "application/vnd.github.v3+json"
     }
     
@@ -57,9 +57,18 @@ def get_diff_commits(repo_owner, repo_name, branch_a, branch_b, token):
         data = response.json()
         commits = data['commits']
         if commits:
+            commit_map = {}
+    
+            # Populate the commit_map with SHA and associate them with 'develop' branch
+            for commit in commits:
+                commit_map[commit['sha']] = repo_object['base_branch']
+
+            track_pr(commit_map,repo_name,repo_owner,repo_object)
+
             commit_details = [
                 {
                     "sha": commit['sha'],
+                    "branch":commit_map[commit['sha']],
                     "author": commit['commit']['author']['name'],
                     "message": commit['commit']['message'],
                     "url": commit['html_url'],
@@ -75,7 +84,46 @@ def get_diff_commits(repo_owner, repo_name, branch_a, branch_b, token):
     else:
         raise Exception(f"Error {response.status_code}: Unable to fetch diff commits")
 
+def track_pr(commit_map,repo_name,repo_owner,repo_object):
+    """
+    Track PR process across different branches: production, staging, and qat-release-branch.
+    """
+    # Step 1: Compare production and staging
+    staging_sha_list = get_commit_diff_as_list( repo_owner, repo_name, repo_object['staging_branch'],repo_object['production_branch'])
+    update_commit_map(commit_map, staging_sha_list,repo_object['staging_branch'])
 
+    # Step 2: Compare staging and qat-release-branch
+    qat_sha_list = get_commit_diff_as_list(repo_owner, repo_name, repo_object['release_branch'], repo_object['staging_branch'])
+    update_commit_map(commit_map, qat_sha_list, repo_object['release_branch'])
+
+    return commit_map
+
+def get_commit_diff_as_list(repo_owner, repo_name, branch_a, branch_b):
+    """
+    Compare two branches and get the list of differing commits.
+    """
+    url = f"{GITHUB_API_URL}/repos/{repo_owner}/{repo_name}/compare/{branch_b}...{branch_a}"
+    
+    headers = {
+        "Authorization": f"token {github_token}",
+        "Accept": "application/vnd.github.v3+json"
+    }
+    
+    response = requests.get(url, headers=headers)
+    
+    if response.status_code == 200:
+        comparison_data = response.json()
+        return [commit['sha'] for commit in comparison_data['commits']]
+    else:
+        raise Exception(f"Error {response.status_code}: Unable to fetch diff commits")
+
+def update_commit_map(commit_map, sha_list, branch):
+    """
+    Update the commit_map with given SHAs and the branch they're in.
+    """
+    for sha in sha_list:
+        commit_map[sha] = branch
+        
 def create_pull_request(repo_owner, repo_name, branch_a, branch_b, token):
     """
     Create a pull request from branch_a to branch_b.
@@ -138,8 +186,8 @@ def get_commits():
     repo_name = request.args.get('repo_name')
     team = request.args.get('team')
     repo_object = get_repo_object(team, repo_name)
-    branch_a = "develop"                # Replace with the source branch name
-    branch_b = "staging"                # Replace with the target branch name
+    branch_a = repo_object['base_branch']                # Replace with the source branch name
+    branch_b = repo_object['production_branch']                # Replace with the target branch name
     token = github_token          # Replace with your GitHub personal access token
     print("Fetching Commits for ",repo_name)
 
@@ -158,7 +206,7 @@ def get_commits():
             return jsonify({"commits": json.loads(cached_commits)}), 200
         
         # If not in cache, fetch the commits from the actual source
-        commits = get_diff_commits(repo_owner, repo_name, branch_a, branch_b, token)
+        commits = get_diff_commits(repo_owner, repo_name, branch_a, branch_b,repo_object)
         
         if commits:
             # Store the result in Redis for future requests

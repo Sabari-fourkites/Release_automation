@@ -114,6 +114,7 @@
         /* Commit Card Styling */
         .commit {
             background-color: #fff;
+            position: relative;
             padding: 20px;
             width: 100%;
             margin-bottom: 20px;
@@ -121,6 +122,18 @@
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
             position: relative;
             transition: transform 0.3s, background-color 0.3s, box-shadow 0.3s;
+        }
+        
+        .branch_state{
+            position: absolute;
+            top: 0px;
+            right: 0px;
+            background-color: #069bff;
+            color: white;
+            padding: 15px 10px;
+            font-size: 20px;
+            font-weight: bold;
+            border-radius: 0 10px 0 10px;
         }
 
         .commit:hover {
@@ -332,6 +345,7 @@
                 // commitDiv.className = "commit";
                 commitDiv.innerHTML = `
                     <div class="commit" style="background-color: ${commit.state[0] ? (commit.state[1]? 'rgba(0, 255, 0, 0.1)' :'transparent') : 'rgba(255, 0, 0, 0.1)'};">
+                    <div class="branch_state">${commit.branch}</div>
                     <a href="${commit.url}" target="_blank" >
                     <div class="commit-header">
                         ${shortenedMessage}
@@ -427,7 +441,7 @@
 
         // Load commits for the default repository on page load
         window.onload = function() {
-            loadCommits('tracking-service');  // Run the first function
+            loadCommits('OTR','tracking-service');  // Run the first function
             loadJSONData();                   // Run the second function
         };
 
