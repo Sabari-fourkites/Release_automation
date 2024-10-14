@@ -3,29 +3,53 @@
       "OTR": {
           "tracking-service": {
               "display_name": "Tracking Service",
-              "repository": "tracking-service"
+              "repository": "tracking-service",
+              "base_branch": "develop",
+              "release_branch": "qat-release-branch",
+              "staging_branch": "staging",
+              "production_branch": "production"
           },
           "global_worker": {
               "display_name": "Global Worker",
-              "repository": "global_worker"
+              "repository": "global_worker",
+              "base_branch": "develop",
+              "release_branch": "qat-release-branch",
+              "staging_branch": "staging",
+              "production_branch": "production"
           },
           "location_service": {
               "display_name": "Location Service",
-              "repository": "location_service"
+              "repository": "location_service",
+              "base_branch": "develop",
+              "release_branch": "qat-release-branch",
+              "staging_branch": "staging",
+              "production_branch": "production"
           },
           "location-worker": {
               "display_name": "Location Worker",
-              "repository": "location-worker"
+              "repository": "location-worker",
+              "base_branch": "develop",
+              "release_branch": "qat-release-branch",
+              "staging_branch": "staging",
+              "production_branch": "production"
           },
           "eta-configuration-service": {
               "display_name": "ETA Config Service",
-              "repository": "eta-configuration-service"
+              "repository": "eta-configuration-service",
+              "base_branch": "develop",
+              "release_branch": "qat-release-branch",
+              "staging_branch": "staging",
+              "production_branch": "production"
           }
       },
       "Data_Platform": {
           "carrier-files-worker": {
               "display_name": "Carrier Files Worker",
-              "repository": "carrier-files-worker"
+              "repository": "carrier-files-worker",
+              "base_branch": "develop",
+              "release_branch": "qat-release-branch",
+              "staging_branch": "staging",
+              "production_branch": "production"
           }
       }
   }
