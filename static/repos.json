@@ -1,31 +1,32 @@
 {
-    "OTR": [
-        {
-            "display_name": "Tracking Service",
-            "repository": "tracking-service"
-        },
-        {
-            "display_name": "Global Worker",
-            "repository": "global_worker"
-        },
-        {
-            "display_name": "Location Service",
-            "repository": "location_service"
-        },
-        {
-            "display_name": "Location Worker",
-            "repository": "location-worker"
-        },
-        {
-            "display_name": "ETA Config Service",
-            "repository": "eta-configuration-service"
-        }
-    ],
-    "Data Platform": [
-        {
-            "display_name": "Carrier Files Worker",
-            "repository": "carrier-files-worker"
-        }
-    ]
+  "teams": {
+      "OTR": {
+          "tracking-service": {
+              "display_name": "Tracking Service",
+              "repository": "tracking-service"
+          },
+          "global_worker": {
+              "display_name": "Global Worker",
+              "repository": "global_worker"
+          },
+          "location_service": {
+              "display_name": "Location Service",
+              "repository": "location_service"
+          },
+          "location-worker": {
+              "display_name": "Location Worker",
+              "repository": "location-worker"
+          },
+          "eta-configuration-service": {
+              "display_name": "ETA Config Service",
+              "repository": "eta-configuration-service"
+          }
+      },
+      "Data_Platform": {
+          "carrier-files-worker": {
+              "display_name": "Carrier Files Worker",
+              "repository": "carrier-files-worker"
+          }
+      }
   }
-  
+}

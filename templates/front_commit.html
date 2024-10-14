@@ -374,45 +374,53 @@
             fetch('/static/repos.json')
                 .then(response => response.json())
                 .then(data => {
-                    populateDropdown(data);
+                    populateDropdown(data['teams']);
                 })
                 .catch(error => console.error('Error loading JSON:', error));
         }
 
         // Populate the dropdown with categories from the JSON
-        function populateDropdown(data) {
+       // Populate the dropdown with team names from the updated JSON
+        function populateDropdown(teamsData) {
             const categorySelect = document.getElementById('category');
             categorySelect.innerHTML = '<option value="">Select Team</option>';  // Reset options
 
-            Object.keys(data).forEach(category => {
+            // Populate dropdown with team names
+            Object.keys(teamsData).forEach(teamName => {
                 const option = document.createElement('option');
-                option.value = category;
-                option.textContent = category;
+                option.value = teamName;
+                option.textContent = teamName;
                 categorySelect.appendChild(option);
             });
 
-            // Store data globally for later use
-            window.reposData = data;
+            // Store teams data globally for later use
+            window.teamsData = teamsData;
         }
 
-        // Function to load repositories based on selected category
-        function loadRepos(category) {
-            const repoList = document.getElementById('repoList');
-            repoList.innerHTML = ''; // Clear existing links
 
-            if (window.reposData && window.reposData[category]) {
-                window.reposData[category].forEach(repo => {
+        // Function to load repositories based on selected category
+        // Function to load repositories based on selected team
+        function loadRepos(team) {
+            const repoList = document.getElementById('repoList');
+            repoList.innerHTML = '';  // Clear existing links
+
+            if (window.teamsData && window.teamsData[team]) {
+                const repos = window.teamsData[team];
+
+                // Iterate over repositories (which are now objects, not arrays)
+                Object.keys(repos).forEach(repoKey => {
+                    const repo = repos[repoKey];  // Get the repo object
+
                     // Create an anchor element for each repo
                     const a = document.createElement('a');
                     a.textContent = repo.display_name;
-                    a.onclick = () => loadCommits(repo.repository);
+                    a.onclick = () => loadCommits(repo.repository);  // Hook to load commits
                     
                     // Add class for consistent styling
                     a.classList.add('repo-link');
                     
                     // Append the anchor to the repoList div
                     repoList.appendChild(a);
-                    // repoList.appendChild(document.createElement('br')); // Add line break
                 });
             }
         }
