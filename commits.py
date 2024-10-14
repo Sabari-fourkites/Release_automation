@@ -8,6 +8,8 @@ import json
 import redis
 import os
 from dotenv import load_dotenv
+from datetime import datetime
+
 load_dotenv()
 
 
@@ -203,30 +205,64 @@ def get_commits():
         if cached_commits:
             # Return the cached response if available
             print("Returning cached commits")
-            return jsonify({"commits": json.loads(cached_commits)}), 200
+            return jsonify(json.loads(cached_commits)), 200
         
+        current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+
         # If not in cache, fetch the commits from the actual source
         commits = get_diff_commits(repo_owner, repo_name, branch_a, branch_b,repo_object)
+        data_to_return = {
+            "commits": commits,
+            "timeStamp": current_time  # Add the current timestamp
+        }
         
         if commits:
             # Store the result in Redis for future requests
-            r.set(redis_key, json.dumps(commits), ex=3600)  # Cache for 1 hour (3600 seconds)
+            r.set(redis_key, json.dumps(data_to_return), ex=3600)  # Cache for 1 hour (3600 seconds)
             print("Commits are cached")
-            return jsonify({"commits": commits}), 200
+            return jsonify(data_to_return), 200
         else:
             return jsonify({"message": f"No new commits from {branch_a} to {branch_b}"}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
     
-@app.route('/clear-cache', methods=['POST'])
-def clear_cache():
+@app.route('/refresh', methods=['POST'])
+def refresh_repo():
+    repo_owner = "cloudqwest"  # Replace with your GitHub username or organization
+    repo_name = request.args.get('repo_name')
+    team = request.args.get('team')
+    repo_object = get_repo_object(team, repo_name)
+    branch_a = repo_object['base_branch']                # Replace with the source branch name
+    branch_b = repo_object['production_branch']                # Replace with the target branch name
+    token = github_token          # Replace with your GitHub personal access token
+
+    print("Updating Commits for ",repo_name)
+
+    if not all([repo_owner, repo_name, branch_a, branch_b, token]):
+        return jsonify({"error": "Missing required parameters"}), 400
+    
+    
+    redis_key = f"commits:{repo_owner}:{repo_name}:{branch_a}:{branch_b}"
     try:
-        r.flushdb()  # Clears all keys in the Redis database
-        print("Redis cache cleared!")
-        return jsonify({"message": "Redis cache cleared!"}), 200
+        
+        current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+
+        # If not in cache, fetch the commits from the actual source
+        commits = get_diff_commits(repo_owner, repo_name, branch_a, branch_b,repo_object)
+        data_to_return = {
+            "commits": commits,
+            "timeStamp": current_time  # Add the current timestamp
+        }
+        
+        if commits:
+            # Store the result in Redis for future requests
+            r.set(redis_key, json.dumps(data_to_return), ex=3600)  # Cache for 1 hour (3600 seconds)
+            print("Commits are cached")
+            return jsonify(data_to_return), 200
+        else:
+            return jsonify({"message": f"No new commits from {branch_a} to {branch_b}"}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-
 
 def validate_commit_message(message):
     """

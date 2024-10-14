@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GitHub Commits Viewer</title>
     <link rel="stylesheet" type="text/css" href="static/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
 </head>
 <body>
     <div class="nav">
@@ -48,7 +49,7 @@
 
                     const container = document.getElementById("commits-container");
                     if (data && data.commits) {
-                        displayCommits(data.commits, repoName);
+                        displayCommits(data,team, repoName);
                     }
                     else{
                         container.innerHTML = `<h1 id="header">Commits for Repository: <span class="repo-name">${repoName}</span></h1>`;
@@ -58,12 +59,28 @@
                 })
                 .catch(error => console.error('Error loading commits:', error));
         }
+        function getMinutesAgo(timestamp) {
+            // Convert the timestamp string to a JavaScript Date object
+            const timestampDate = new Date(timestamp);
 
-        function displayCommits(commits, repoName) {
+            // Get the current time as a Date object
+            const currentTime = new Date();
+
+            // Calculate the time difference in milliseconds
+            const timeDifference = currentTime - timestampDate;
+
+            // Convert the difference from milliseconds to minutes
+            const minutesAgo = Math.floor(timeDifference / (1000 * 60));
+
+            // Return the calculated minutes
+            return minutesAgo;
+        }
+
+        function displayCommits(data,team, repoName) {
 
             const container = document.getElementById("commits-container");
             container.innerHTML = `<h1 id="header">Commits for Repository: <span class="repo-name">${repoName}</span></h1>`;
-            console.log(commits);
+            const commits = data.commits;
             let count = 0;
             commits.forEach(commit => {
                 if(commit.state[0] && commit.state[1]){
@@ -71,6 +88,12 @@
                 }
             });
             container.innerHTML += `<div class="header-pr-div"> <h3 id="header-pr">Total PR's Ready for release: ${count}</h3></div>`;
+            container.innerHTML += `
+                <div class="header-timeStamp">
+                    <h2 id="header-pr">Last Sync : ${getMinutesAgo(data.timeStamp)} mins ago</h2>
+                    <button class="refresh-btn" onclick="refreshRepo('${team}', '${repoName}')"><i class="fa fa-refresh"></i></button>
+                </div>`;
+
             commits.forEach(commit => {
                 const fullMessage = commit.message;
                 const shortenedMessage = fullMessage.split('\n')[0]; // Limit title to the first line or until a quotation mark
@@ -101,21 +124,42 @@
             });
         }
 
-        function clearRedisCache() {
-            console.log('Clearing Redis Cache...');
-            fetch('/clear-cache', {
+        function refreshRepo(team,repoName) {
+            const button = event.currentTarget;  // Reference to the clicked button
+
+            // Change the icon to indicate loading
+            const icon = button.querySelector('i'); // Get the icon within the button
+            icon.classList.add('fa-spin'); // Add spin class to the icon
+
+            const url = `http://127.0.0.1:5000/refresh?team=${team}&repo_name=${repoName}`;
+            console.log('Refreshing Redis Cache...');
+            fetch(url, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 }
             })
-            .then(response => response.json())
-            .then(data => {
-                alert(data.message || data.error);  // Show a message after clearing
-            })
-            .catch(error => {
-                console.error('Error:', error);
-            });
+                .then(response => response.json())
+                .then(data => {
+                    if (data && data.repo_name) {
+                        // Update the header with the correct repository name
+                        const header = document.querySelector("#header");
+                        header.innerHTML = `Commits for Repository: <span class="repo-name">${data.repo_name}</span>`;
+                    }
+
+                    // Check if data has commits, if so, display them
+
+                    const container = document.getElementById("commits-container");
+                    if (data && data.commits) {
+                        displayCommits(data,team, repoName);
+                    }
+                    else{
+                        container.innerHTML = `<h1 id="header">Commits for Repository: <span class="repo-name">${repoName}</span></h1>`;
+                        container.innerHTML += `<div class="header-pr-div"><h3 id="header">No commits found for this repository.</h3></div>`;
+                        return;
+                    }
+                })
+                .catch(error => console.error('Error loading commits:', error));
         }
 
         function loadJSONData() {
