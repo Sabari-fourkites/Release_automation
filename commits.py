@@ -218,7 +218,7 @@ def get_commits():
         
         if commits:
             # Store the result in Redis for future requests
-            r.set(redis_key, json.dumps(data_to_return), ex=3600)  # Cache for 1 hour (3600 seconds)
+            r.set(redis_key, json.dumps(data_to_return))  # Cache for 1 hour (3600 seconds)
             print("Commits are cached")
             return jsonify(data_to_return), 200
         else:
