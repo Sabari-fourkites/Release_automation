@@ -117,17 +117,19 @@ class JiraGraphQLAPI:
                         flag1 = False
         
         array[0]=flag1
-        flag= False
+        flag= True
+        flag2 = False
         for instance in instance_types:
             repositories = instance['repository']
             for repo in repositories:
                 if repo['name'] == 'cloudqwest/test-automation':
-                    flag=True
                     prs = repo['pullRequests']
                     for pr in prs:
-                        if pr['status'] != 'MERGED'  and pr['status'] != 'DECLINED':
-                            return array
-        array[1]=flag
+                        if pr['status'] != 'MERGED' and pr['status'] != 'DECLINED':
+                            flag = False
+                        if pr['status'] == 'MERGED':
+                            flag2 = True
+        array[1]=flag*flag2
         return array
         # return True  # Return True if all PRs are merged
 
