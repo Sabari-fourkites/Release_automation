@@ -72,11 +72,11 @@ def get_diff_commits(repo_owner, repo_name, branch_a, branch_b,repo_object):
                     "sha": commit['sha'],
                     "branch":commit_map[commit['sha']],
                     "author": commit['commit']['author']['name'],
-                    "message": commit['commit']['message'],
+                    "message": commit['commit']['message'].splitlines()[0],
                     "url": commit['html_url'],
                     "date": commit['commit']['author']['date'],
-                    "state": validate_commit_message(commit['commit']['message']),
-                    "jira_ticket": strip_jira_ticket(commit['commit']['message'])
+                    "state": validate_commit_message(commit['commit']['message'].splitlines()[0]),
+                    "jira_ticket": strip_jira_ticket(commit['commit']['message'].splitlines()[0])
                 }
                 for commit in commits
             ]
