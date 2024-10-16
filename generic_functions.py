@@ -1,4 +1,6 @@
 import re
+from JiraGraphQLAPI import JiraGraphQLAPI
+from datetime import datetime
 
 def extract_pr_number(commit_message):
     """
@@ -24,3 +26,21 @@ def strip_jira_ticket(message):
     """
     jira_ticket = re.search(r'[A-Z]{2,}-\d+', message)
     return jira_ticket.group() if jira_ticket else None
+
+def validate_commit_message(message):
+    """
+    Validate the commit message.
+    """
+    jira_ticket = strip_jira_ticket(message)
+    array = [False,False]
+    print("TICKET_ID : " ,jira_ticket)
+    jira = JiraGraphQLAPI()
+    if jira_ticket==None:
+        return array
+    return jira.check_jira_ticket(jira_ticket,array)
+
+def get_current_time():
+    """
+    Get the current time in the format 'YYYY-MM-DD HH:MM:SS'.
+    """
+    return datetime.now().strftime('%Y-%m-%d %H:%M:%S')
