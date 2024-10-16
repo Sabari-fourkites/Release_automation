@@ -5,7 +5,7 @@ import os
 
 
 class JiraGraphQLAPI:
-    def __init__(self, username, api_token, jira_url):
+    def __init__(self):
         self.jira_url = "https://fourkites.atlassian.net"
         self.username = os.getenv("JIRA_USERNAME")
         self.api_token = os.getenv("JIRA_API_TOKEN")
@@ -131,18 +131,3 @@ class JiraGraphQLAPI:
                             flag2 = True
         array[1]=flag*flag2
         return array
-        # return True  # Return True if all PRs are merged
-
-
-# Usage example
-# username = "your_jira_username"
-# api_token = "your_jira_api_token"
-# jira_url = "https://fourkites.atlassian.net"
-
-# jira = JiraGraphQLAPI(username, api_token, jira_url)
-# jira_ticket="TRACNG-8736"
-# print("TICKET : "+jira_ticket)
-# ticket_id=jira.get_ticket_id(jira_ticket)
-# print("TICKET_ID : "+ticket_id)
-# dev_details = jira.get_dev_details(ticket_id)
-# print(json.dumps(dev_details, indent=2))

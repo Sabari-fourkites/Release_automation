@@ -1,14 +1,16 @@
-from flask import Flask, jsonify, request,render_template
-from config import REDIS_CONFIG
+import generic_functions as gf
 import requests
-from flask_cors import CORS
-from JiraGraphQLAPI import JiraGraphQLAPI
 import re
 import json
 import redis
 import os
+
+from flask import Flask, jsonify, request,render_template
+from config import REDIS_CONFIG
 from dotenv import load_dotenv
 from datetime import datetime
+from flask_cors import CORS
+from JiraGraphQLAPI import JiraGraphQLAPI
 
 load_dotenv()
 
@@ -42,18 +44,6 @@ def get_repo_object(team, repo_name):
             return team_repos[repo_name]
     return None
 
-def extract_pr_number(commit_message):
-    """
-    Extracts the pull request number from the commit message if it exists.
-    Matches both 'Merge pull request #113' and 'RAIL-2107 Fix (#8388)'.
-    Returns None if no PR number is found.
-    """
-    match = re.search(r'pull request #(\d+)|\(#(\d+)\)', commit_message, re.IGNORECASE)
-    if match:
-        return match.group(1) or match.group(2)
-    return None
-
-
 def get_diff_commits(repo_owner, repo_name, branch_a, branch_b,repo_object):
     """
     Compare two branches and get the list of differing commits.
@@ -82,7 +72,7 @@ def get_diff_commits(repo_owner, repo_name, branch_a, branch_b,repo_object):
             commit_details = []
             for commit in commits:
                 commit_message = commit['commit']['message'].splitlines()[0]
-                pr_number = extract_pr_number(commit_message)
+                pr_number = gf.extract_pr_number(commit_message)
                 print("PR_NUMBER : ",pr_number)
                 
                 if pr_number:
@@ -95,7 +85,7 @@ def get_diff_commits(repo_owner, repo_name, branch_a, branch_b,repo_object):
                             "url": pr_details['html_url'],  # PR URL
                             "date": pr_details['merged_at'],  # PR merge date
                             "state": validate_commit_message(pr_details['title']),  # PR state (open/closed/merged)
-                            "jira_ticket": strip_jira_ticket(pr_details['title']),
+                            "jira_ticket": gf.strip_jira_ticket(pr_details['title']),
                             "branch": commit_map[commit['sha']]  # Branch associated with the commit
                         })
             return commit_details
@@ -130,11 +120,11 @@ def track_pr(commit_map,repo_name,repo_owner,repo_object):
     """
     # Step 1: Compare production and staging
     staging_sha_list = get_commit_diff_as_list( repo_owner, repo_name, repo_object['staging_branch'],repo_object['production_branch'])
-    update_commit_map(commit_map, staging_sha_list,repo_object['staging_branch'])
+    gf.update_commit_map(commit_map, staging_sha_list,repo_object['staging_branch'])
 
     # Step 2: Compare staging and qat-release-branch
     qat_sha_list = get_commit_diff_as_list(repo_owner, repo_name, repo_object['release_branch'], repo_object['staging_branch'])
-    update_commit_map(commit_map, qat_sha_list, repo_object['release_branch'])
+    gf.update_commit_map(commit_map, qat_sha_list, repo_object['release_branch'])
 
     return commit_map
 
@@ -156,40 +146,6 @@ def get_commit_diff_as_list(repo_owner, repo_name, branch_a, branch_b):
         return [commit['sha'] for commit in comparison_data['commits']]
     else:
         raise Exception(f"Error {response.status_code}: Unable to fetch diff commits")
-
-def update_commit_map(commit_map, sha_list, branch):
-    """
-    Update the commit_map with given SHAs and the branch they're in.
-    """
-    for sha in sha_list:
-        commit_map[sha] = branch
-        
-def create_pull_request(repo_owner, repo_name, branch_a, branch_b, token):
-    """
-    Create a pull request from branch_a to branch_b.
-    """
-    url = f"{GITHUB_API_URL}/repos/{repo_owner}/{repo_name}/pulls"
-    
-    headers = {
-        "Authorization": f"token {token}",
-        "Accept": "application/vnd.github.v3+json"
-    }
-    
-    data = {
-        "title": f"Merge {branch_a} into {branch_b}",
-        "head": branch_a,
-        "base": branch_b,
-        "body": f"This PR merges the changes from {branch_a} into {branch_b}.",
-        "maintainer_can_modify": True
-    }
-    
-    response = requests.post(url, json=data, headers=headers)
-    
-    if response.status_code == 201:
-        pr = response.json()
-        return pr['html_url'], pr['number']
-    else:
-        raise Exception(f"Error {response.status_code}: Unable to create pull request")
 
 def get_pr_commits(repo_owner, repo_name, pr_number, token):
     """
@@ -306,22 +262,14 @@ def validate_commit_message(message):
     """
     Validate the commit message.
     """
-    jira_ticket = strip_jira_ticket(message)
+    jira_ticket = gf.strip_jira_ticket(message)
     array = [False,False]
     print("TICKET_ID : " ,jira_ticket)
-    jira = JiraGraphQLAPI("your_username", "your_api_token","https://fourkites.atlassian.net")
+    jira = JiraGraphQLAPI()
     if jira_ticket==None:
         return array
     return jira.check_jira_ticket(jira_ticket,array)
     #     array[0]=True
     
-    
-def strip_jira_ticket(message):
-    """
-    Extract the Jira ticket key from the commit message.
-    """
-    jira_ticket = re.search(r'[A-Z]{2,}-\d+', message)
-    return jira_ticket.group() if jira_ticket else None
-
 if __name__ == '__main__':
     app.run(debug=True)
