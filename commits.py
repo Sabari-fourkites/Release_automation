@@ -42,6 +42,18 @@ def get_repo_object(team, repo_name):
             return team_repos[repo_name]
     return None
 
+def extract_pr_number(commit_message):
+    """
+    Extracts the pull request number from the commit message if it exists.
+    Matches both 'Merge pull request #113' and 'RAIL-2107 Fix (#8388)'.
+    Returns None if no PR number is found.
+    """
+    match = re.search(r'pull request #(\d+)|\(#(\d+)\)', commit_message, re.IGNORECASE)
+    if match:
+        return match.group(1) or match.group(2)
+    return None
+
+
 def get_diff_commits(repo_owner, repo_name, branch_a, branch_b,repo_object):
     """
     Compare two branches and get the list of differing commits.
@@ -67,24 +79,50 @@ def get_diff_commits(repo_owner, repo_name, branch_a, branch_b,repo_object):
 
             track_pr(commit_map,repo_name,repo_owner,repo_object)
 
-            commit_details = [
-                {
-                    "sha": commit['sha'],
-                    "branch":commit_map[commit['sha']],
-                    "author": commit['commit']['author']['name'],
-                    "message": commit['commit']['message'].splitlines()[0],
-                    "url": commit['html_url'],
-                    "date": commit['commit']['author']['date'],
-                    "state": validate_commit_message(commit['commit']['message'].splitlines()[0]),
-                    "jira_ticket": strip_jira_ticket(commit['commit']['message'].splitlines()[0])
-                }
-                for commit in commits
-            ]
+            commit_details = []
+            for commit in commits:
+                commit_message = commit['commit']['message'].splitlines()[0]
+                pr_number = extract_pr_number(commit_message)
+                print("PR_NUMBER : ",pr_number)
+                
+                if pr_number:
+                    # If a PR number is present, fetch PR details using GitHub API
+                    pr_details = get_pr_for_commit(repo_owner,repo_name,commit['sha'])
+                    if pr_details:
+                        commit_details.append({
+                            "author": pr_details['user']['login'],  # PR author
+                            "message": pr_details['title'] +" #("+pr_number+")",  # PR title
+                            "url": pr_details['html_url'],  # PR URL
+                            "date": pr_details['merged_at'],  # PR merge date
+                            "state": validate_commit_message(pr_details['title']),  # PR state (open/closed/merged)
+                            "jira_ticket": strip_jira_ticket(pr_details['title']),
+                            "branch": commit_map[commit['sha']]  # Branch associated with the commit
+                        })
             return commit_details
         else:
             return None
     else:
         raise Exception(f"Error {response.status_code}: Unable to fetch diff commits")
+    
+def get_pr_for_commit(repo_owner,repo_name,commit_sha):
+    """Get the parent PR associated with a commit"""
+    url = f"https://api.github.com/repos/{repo_owner}/{repo_name}/commits/{commit_sha}/pulls"
+    headers = {
+        "Authorization": f"token {github_token}",
+        "Accept": "application/vnd.github.groot-preview+json"  # Special preview header for PRs linked to commits
+    }
+
+    response = requests.get(url, headers=headers)
+    if response.status_code == 200:
+        pulls = response.json()
+        if pulls:
+            # Returning the first PR (there can be multiple if commits are cherry-picked)
+            return pulls[0]
+        else:
+            return None
+    else:
+        print(f"Failed to fetch PR for commit {commit_sha}: {response.status_code}")
+        return None
 
 def track_pr(commit_map,repo_name,repo_owner,repo_object):
     """

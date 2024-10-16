@@ -108,7 +108,6 @@
                         ${shortenedMessage}
                     </div>
                     <div class="commit-author">by ${commit.author}</div>
-                    <div class="commit-sha">SHA: ${commit.sha}</div>
                     </a>
                     ${!commit.state[1] ? '<div class="commit-warn" >Automation Not Done</div>' : ''}
                     ${commit.state[1] ? '<div class="commit-green" >Automation Done</div>' : ''}
